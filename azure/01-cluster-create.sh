@@ -16,7 +16,6 @@ az aks nodepool add \
     --node-count 1 \
     --node-vm-size "${GPU_SKU}" \
     --gpu-driver none \
-    --node-taints "sku=gpu:NoSchedule" \
     --labels "sku=gpu"
 
 echo "--- 4. Getting Cluster Credentials ---"
