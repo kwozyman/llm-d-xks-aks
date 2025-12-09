@@ -3,7 +3,7 @@
 export RESOURCE_GROUP="llmd-rg-1"
 export CLUSTER_NAME="llmd-cluster-1"
 export LOCATION="eastus"
-export GPU_SKU="Standard_NC6s_v3"
+export GPU_SKU="Standard_NC24ads_A100_v4"
 export HF_TOKEN="SECRET"
 export SSH_KEY_FILE="${HOME}/.ssh/id_rsa.pub"
 export GPU_OPERATOR_VERSION="v25.10.0"
