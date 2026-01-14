@@ -48,7 +48,7 @@ Of note is the `--set "driver.rdma.enabled=true"` argument, which enables RDMA. 
 
 `03-istio.sh`
 
-Istio is installed as the gateway provider.
+This script prepares the cluster to handle specialized AI inference traffic. It installs the required Custom Resource Definitions (CRDs) and the service mesh (Istio) that will manage the lifecycle of LLM requests. This is done by using official llm-d scripts (hence the downloading of llm-d code repository) and Istio is used to ensure traffic is distributed efficiently across GPU nodes.
 
 `05-netop.sh`
 
