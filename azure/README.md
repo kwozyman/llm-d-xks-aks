@@ -10,6 +10,8 @@ Prerequisites
 Installation
 ---
 
+The actual commands used for installation are provided as numbered scripts in this repository. They should be referenced in conjunction to this documentation.
+
 First, you need to edit the `vars` file which contains variables used by the scripts. In reality, the only environment variables that require change are `HF_TOKEN` (HuggingFace access token) and potentially `SSH_KEY_FILE` with a path to your RSA SSH public key.
 
 The variables that can be defined here are:
@@ -32,7 +34,17 @@ An important detail here is the `--gpu-driver none` argument for the worker node
 
 `02-gpuoperator.sh`
 
-Using `helm`, this script installs the NVidia GPU Operator with RDMA enabled (`driver.rdma.enabled=true` parameter).
+The second script handles the GPU drivers layer. Since the node pool was initialized with `--gpu-driver none` in the previous step, this script installs GPU Operator that in turn deploys needed NVidia drivers. This is handled via `helm`:
+
+```
+helm install --wait -n gpu-operator --create-namespace \
+    gpu-operator nvidia/gpu-operator \
+    --version "${GPU_OPERATOR_VERSION}" \
+    --set "driver.rdma.enabled=true"
+```
+
+Of note is the `--set "driver.rdma.enabled=true"` argument, which enables RDMA. This is harmless even if using a single node. The compilation and deplyoment of GPU Operator will take several minutes. It is best to watch the pods using `kubectl -n gpu-operator get pod` until all pods are in state "Running".
+
 
 `03-istio.sh`
 
