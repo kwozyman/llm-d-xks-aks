@@ -26,7 +26,9 @@ The variables that can be defined here are:
 
 `01-cluster-create.sh`
 
-This script creates a resource group and a AKS cluster (names can be changed via the appropriate environment variables). In step 3 a new node pool called "gpunp" is created and the cluster is extended with 2 GPU nodes.
+This first script focuses on the infrastructure provisioning phase. It sets up the foundational Azure resources required to host a GPU-accelerated Kubernetes environment. The important bits to note here is the difference between control plane virtual machines (a small `Standard_D2s_v3` is used) and worker virtual machines. We are adding one node of the type `${GPU_SKU}` (defaults to `Standard_NC6s_v3`).
+
+An important detail here is the `--gpu-driver none` argument for the worker nodes. This allows the user to install NVidia driver by using GPU Operator at a later time.
 
 `02-gpuoperator.sh`
 

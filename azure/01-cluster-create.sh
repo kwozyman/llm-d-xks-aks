@@ -13,7 +13,7 @@ az aks nodepool add \
     --resource-group "${RESOURCE_GROUP}" \
     --cluster-name "${CLUSTER_NAME}" \
     --name "gpunp" \
-    --node-count 2 \
+    --node-count 1 \
     --node-vm-size "${GPU_SKU}" \
     --gpu-driver none \
     --labels "sku=gpu"
