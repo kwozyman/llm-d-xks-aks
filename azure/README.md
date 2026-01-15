@@ -59,9 +59,26 @@ inferenceobjectives                inference.networking.x-k8s.io/v1alpha2   true
 inferencepools        xinfpool     inference.networking.x-k8s.io/v1alpha2   true         InferencePool
 ```
 
+`04-monitoring.sh`
+
+This script deploys the monitoring stack for llm-d. It's using the upstream `install-prometheus-grafana.sh`. However, *there is a manual step required*. While the script is running, you should edit configmap `${LLMD_NAMESPACE}/llmd-grafana` to specify llmd-grafana is *not* the default data source:
+
+```
+$ source vars && kubectl -n "${LLMD_NAMESPACE}" edit configmaps llmd-grafana
+# now edit "data.datasources.yaml.datasources[0].isDefault" and set it to "false"
+
+$ kubectl -n "${LLMD_NAMESPACE}" get configmaps llmd-grafana -o json | jq '.data["datasources.yaml"]' | yq | yq -o json | jq '.datasources[0].isDefault'
+false
+```
+
 `05-netop.sh`
 
-Network operator installation.
+Network operator installation. This phase installs the NVIDIA Network Operator and configures the cluster policies required for high-speed, low-latency communication between GPU nodes. This is critical for Distributed Training and Multi-Node Inference, where data must be synchronized across the network rapidly, but does not impede single node inference, so it can be safely deployed even for a single node installation. The network operator deployment can take a long time, so please be patient. To check, wait until all `network-operator` pods are in state "Running":
+
+```
+$ kubectl -n network-operator get pod
+
+```
 
 `06-nri.sh`
 
