@@ -84,4 +84,11 @@ $ kubectl -n network-operator get pod
 
 By default, Azure Kubernetes Service sets a maximum locked memory limit of 64K per container, which is insufficient for vLLM's NIXL connector. To address this limitation, Node Resource Interface must be enabled on all GPU nodes. This script *must* run only after GPU Operator has completely finished deploying.
 
+`07-httproute.sh`
+
+This phase deploys the high-level routing rules that direct traffic to your models and configures the authentication required to download model weights from external registries like Hugging Face.
+
+`08-llmd.sh`
+
+This phase moves beyond infrastructure to the actual AI application layer, where the LLM-D scheduler and model servers (vLLM) are instantiated.
 
