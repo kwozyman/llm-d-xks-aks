@@ -92,3 +92,40 @@ This phase deploys the high-level routing rules that direct traffic to your mode
 
 This phase moves beyond infrastructure to the actual AI application layer, where the LLM-D scheduler and model servers (vLLM) are instantiated.
 
+Validation
+---
+
+After deplyoment, there are a couple of tests that can be used as validation:
+
+1. Check GPU detection
+
+```
+kubectl describe nodes -l sku=gpu | grep -E "nvidia.com/gpu|rdma/ib"
+```
+
+Output should contain something like `nvidia.com/gpu: [number]` and `rmda/ib: [number]`.
+
+2. Check GPU operator pods
+
+```
+kubectl get pods -n gpu-operator
+kubectl get pods -n network-operator
+```
+
+All of the pods should be in state "Running".
+
+3. Verify gateway ip
+
+```
+export GATEWAY_IP=$(kubectl get gateway -n "${LLMD_NAMESPACE}" -o jsonpath='{.status.addresses[0].value}')
+echo "Gateway IP: ${GATEWAY_IP}"
+```
+
+4. Verify llmd pods
+
+```
+kubectl get pods -n "${LLMD_NAMESPACE}" -w
+```
+
+All the pods should be in "Running" state.
+
