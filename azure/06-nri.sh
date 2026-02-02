@@ -13,4 +13,4 @@ kubectl get nodes -o custom-columns=":metadata.name" --no-headers -l agentpool=g
 done
 
 kubectl apply -k https://github.com/containerd/nri/contrib/kustomize/ulimit-adjuster
-
+kubectl -n kube-system patch daemonsets.apps nri-plugin-ulimit-adjuster -p '{"spec": {"template": {"spec": {"nodeSelector": {"agentpool": "gpunp"}}}}}'
