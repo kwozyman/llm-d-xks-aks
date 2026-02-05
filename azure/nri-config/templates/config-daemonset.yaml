@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: nri-node-initializer
+  namespace: kube-system
+spec:
+  selector:
+    matchLabels:
+      name: nri-node-initializer
+  template:
+    metadata:
+      labels:
+        name: nri-node-initializer
+    spec:
+      nodeSelector:
+        {{- toYaml .Values.nodeSelector | nindent 8 }}
+      hostPID: true # Required to restart systemd services
+      volumes:
+        - name: containerd-conf
+          hostPath:
+            path: /etc/containerd/conf.d
+        - name: dbus
+          hostPath:
+            path: /var/run/dbus/system_bus_socket
+      initContainers:
+        - name: enable-nri
+          image: busybox
+          command: ["sh", "-c"]
+          args:
+            - |
+              cat <<EOF > /host/etc/containerd/conf.d/98-nri.toml
+              [plugins."io.containerd.nri.v1.nri"]
+                disable = false
+              EOF
+          volumeMounts:
+            - name: containerd-conf
+              mountPath: /host/etc/containerd/conf.d
+      containers:
+        - name: restart-containerd
+          image: alpine:latest
+          command: ["sh", "-c"]
+          # This checks if the config is applied and restarts containerd via nsenter
+          args:
+            - |
+              nsenter -t 1 -m -u -n -i systemctl restart containerd
+              echo "Containerd restarted. Sleeping forever..."
+              sleep infinity
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - name: dbus
+              mountPath: /var/run/dbus/system_bus_socket

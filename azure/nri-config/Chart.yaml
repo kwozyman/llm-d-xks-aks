@@ -1,0 +1,6 @@
+---
+apiVersion: v2
+name: nri-config
+description: A Helm chart to enable NRI and deploy ulimit-adjuster
+version: 0.1.0
+type: application

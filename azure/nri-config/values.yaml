@@ -1,0 +1,6 @@
+nodeSelector:
+  agentpool: gpunp
+
+adjuster:
+  image: ghcr.io/containerd/nri/plugins/ulimit-adjuster
+  version: v0.10.0
