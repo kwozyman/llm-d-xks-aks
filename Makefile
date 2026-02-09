@@ -1,5 +1,5 @@
-RESOURCE_GROUP ?= "cgament-llmd-rg-1"
-CLUSTER_NAME ?= "cgament-llmd-cluster-1"
+RESOURCE_GROUP ?= "llmd-rg-1"
+CLUSTER_NAME ?= "llmd-cluster-1"
 LOCATION ?= "eastus"
 CONTROL_SKU ?= "Standard_D5_v2"
 GPU_SKU ?= "Standard_NC24ads_A100_v4"
@@ -10,13 +10,27 @@ NODEPOOL_NAME ?= "gpunp"
 GPU_NODE_LABEL ?= "sku=gpu"
 NRI_NAMESPACE ?= "kube-system"
 
+default: help
+
+help:
+	@echo "Usage:"
+	@echo "   make <target>"
+	@echo "Available targets"
+	@echo "   check-deps          -- check if required binaries are available"
+	@echo "   clean               -- alias to cluster-clear"
+	@echo "   cluster-clean       -- completely delete created AKS cluster"
+	@echo "   cluster             -- cluster-create and cluster-credentials"
+	@echo "   cluster-create      -- create a new AKS cluster and attach the desired GPU nodes as a nodepool"
+	@echo "   cluster-credentials -- download the cluster credentials (kubeconfig)"
+	@echo "   deploy              -- deploy GPU Operator and NRI plugin"
+	@echo "   deploy-gpuoperator  -- deploy Nvidia GPU Operator using helmchart"
+	@echo "   deploy-nriconfig    -- deploy NRI containerd plugin using helmchart"
+
 check-deps:
 	@which az
 	@az extension list | grep -i preview
 	@which kubectl
 	@which helm
-	@which helmfile
-
 
 clean: cluster-clean
 cluster: cluster-create cluster-credentials
