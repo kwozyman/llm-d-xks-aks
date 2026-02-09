@@ -12,6 +12,7 @@ NRI_NAMESPACE ?= "kube-system"
 
 check-deps:
 	@which az
+	@az extension list | grep -i preview
 	@which kubectl
 	@which helm
 	@which helmfile
