@@ -75,4 +75,4 @@ deploy-gpuoperator:
 
 deploy-nriconfig:
 	@echo "Deploying NRI plugin"
-	helm upgrade --install nri-setup ../nri-config/ --namespace "${NRI_NAMESPACE}" --create-namespace
+	helm upgrade --install nri-setup ./nri-config/ --namespace "${NRI_NAMESPACE}" --create-namespace
