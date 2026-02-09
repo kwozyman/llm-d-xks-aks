@@ -1,96 +1,86 @@
-`llm-d` on Azure Kubernetes Service (AKS)
+`llm-d`-ready cluster creation for Azure Kubernetes Service (AKS)
 ===
 
 Prerequisites
 ---
 
+* GNU Make
 * latest [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest) binary with `aks-preview` extension installed
-* `kubectl` and `helm`
+* `kubectl`
+* `helm`
 
-Installation
+
+Makefile structure
 ---
 
-The actual commands used for installation are provided as numbered scripts in this repository. They should be referenced in conjunction to this documentation.
+This repository contains a `Makefile` designed to facilitate AKS cluster creation compatible and prepared for `llm-d` deployment further down the line. While it has sane and usable defaults, there are a couple of variables used to tweak cluster creation and drivers deployment:
 
-First, you need to edit the `vars` file which contains variables used by the scripts. In reality, the only environment variables that require change are `HF_TOKEN` (HuggingFace access token) and potentially `SSH_KEY_FILE` with a path to your RSA SSH public key.
+| Variable       | Default value | Meaning |
+| -------------- | ------------- | ------- |
+| `RESOURCE_GROUP` | `llmd-rg-1`      | Azure resrouce group name |
+| `CLUSTER_NAME`   | `llmd-cluster-1` | AKS cluster name |
+| `LOCATION`       | `eastus`         | Azure region/location |
+| `CONTROL_SKU`    | `Standard_D5_v2` | Size of virtual machine used for running the control plane |
+| `GPU_SKU`        | `Standard_NC24ads_A100_v4` | Size of virtual machine (with GPU!) used for running gpu worker nodes |
+| `NODE_COUNT`     | `1`              | How many GPU worker node to be added |
+| `SSH_KEY_FILE`   | `${HOME}/.ssh/azure.pub` | Path to ssh public key used to access nodes via SSH |
+| `GPU_OPERATOR_VERSION` | `v25.10.0` | GPU Operator version to deploy |
+| `NODEPOOL_NAME`  | `gpunp`          | AKS nodepool name |
+| `GPU_NODE_LABEL` | `sku=gpu`        | Label to add to all GPU nodes |
+| `NRI_NAMESPACE`  | `kube-system`    | Namespace in which to deploy NRI plugin |
 
-The variables that can be defined here are:
+In order to override any of the variables:
 
-  * `RESOURCE_GROUP` -- name of the Azure resource group
-  * `CLUSTER_NAME` -- AKS (Azure Kubernetes Service) cluster name
-  * `LOCATION` -- Azure region
-  * `GPU_SKU` -- What VM type to use for worker nodes. The flavors that are known to work are: `Standard_NC24ads_A100_v4`, `Standard_ND96asr_v4`, `Standard_ND96amsr_A100_v4`, `Standard_ND96isr_H100_v5` or `Standard_ND96isr_H200_v5`
-  * `HF_TOKEN` -- HugginFace token -- this should be kept secret!
-  * `SSH_KEY_FILE` -- public key file to be used for access to the cluster nodes
-  * `GPU_OPERATOR_VERSION` -- version of GPU Operator to deploy
-  * `LLMD_VERSION` -- Version of LLMD to deploy
-  * `LLMD_NAMESPACE` -- in what namespace to deploy llmd
-
-`01-cluster-create.sh`
-
-This first script focuses on the infrastructure provisioning phase. It sets up the foundational Azure resources required to host a GPU-accelerated Kubernetes environment. The important bits to note here is the difference between control plane virtual machines (a small `Standard_D2s_v3` is used) and worker virtual machines. We are adding one node of the type `${GPU_SKU}` (defaults to `Standard_NC6s_v3`).
-
-An important detail here is the `--gpu-driver none` argument for the worker nodes. This allows the user to install NVidia driver by using GPU Operator at a later time.
-
-`02-gpuoperator.sh`
-
-The second script handles the GPU drivers layer. Since the node pool was initialized with `--gpu-driver none` in the previous step, this script installs GPU Operator that in turn deploys needed NVidia drivers. This is handled via `helm`:
-
-```
-helm install --wait -n gpu-operator --create-namespace \
-    gpu-operator nvidia/gpu-operator \
-    --version "${GPU_OPERATOR_VERSION}" \
-    --set "driver.rdma.enabled=true"
+```bash
+$ VARIABLE=value make target
 ```
 
-Of note is the `--set "driver.rdma.enabled=true"` argument, which enables RDMA. This is harmless even if using a single node. The compilation and deplyoment of GPU Operator will take several minutes. It is best to watch the pods using `kubectl -n gpu-operator get pod` until all pods are in state "Running".
+
+Makefile targets
+---
+
+The Makefile provides a couple of generic targets:
+
+| Target    | Description |
+| --------  | ----------- |
+| `check-deps` | Check if required binaries and utilities are available |
+| `clean`   | Completely delete AKS cluster, this will remove all worker and control planes nodes and any configuration associated with it. Use with caution! |
+| `cluster` | Create a new cluster from scratch and download kubeconfig |
+| `deploy`  | Deploy GPU Operator to provide Nvidia drivers and NRI plugin on worker nodes |
+| `help`    | Help with all the available make targets |
 
 
-`03-istio.sh`
+Cluster creation
+---
 
-This script prepares the cluster to handle specialized AI inference traffic. It installs the required Custom Resource Definitions (CRDs) and the service mesh (Istio) that will manage the lifecycle of LLM requests. This is done by using official llm-d scripts (hence the downloading of llm-d code repository) and Istio is used to ensure traffic is distributed efficiently across GPU nodes. Succesful installation should display something akin to:
+```bash
+# use defaults
+make cluster
 
-```
---- Verify gateway installation ---
-NAME             SHORTNAMES   APIVERSION                       NAMESPACED   KIND
-inferencepools   infpool      inference.networking.k8s.io/v1   true         InferencePool
-NAME                  SHORTNAMES   APIVERSION                               NAMESPACED   KIND
-inferenceobjectives                inference.networking.x-k8s.io/v1alpha2   true         InferenceObjective
-inferencepools        xinfpool     inference.networking.x-k8s.io/v1alpha2   true         InferencePool
-```
+# personalize
+RESOURCE_GROUP=rg_name CLUSTER_NAME=new_cluster_name NODE_COUNT=3 GPU_SKU=Standard_NC24ads_A100_v4 make cluster
 
-`04-monitoring.sh`
-
-This script deploys the monitoring stack for llm-d. It's using the upstream `install-prometheus-grafana.sh`. However, *there is a manual step required*. While the script is running, you should edit configmap `${LLMD_NAMESPACE}/llmd-grafana` to specify llmd-grafana is *not* the default data source:
-
-```
-$ source vars && kubectl -n "${LLMD_NAMESPACE}" edit configmaps llmd-grafana
-# now edit "data.datasources.yaml.datasources[0].isDefault" and set it to "false"
-
-$ kubectl -n "${LLMD_NAMESPACE}" get configmaps llmd-grafana -o json | jq '.data["datasources.yaml"]' | yq | yq -o json | jq '.datasources[0].isDefault'
-false
-```
-
-`05-netop.sh`
-
-Network operator installation. This phase installs the NVIDIA Network Operator and configures the cluster policies required for high-speed, low-latency communication between GPU nodes. This is critical for Distributed Training and Multi-Node Inference, where data must be synchronized across the network rapidly, but does not impede single node inference, so it can be safely deployed even for a single node installation. The network operator deployment can take a long time, so please be patient. To check, wait until all `network-operator` pods are in state "Running":
-
-```
-$ kubectl -n network-operator get pod
+# test
+kubectl get node
 
 ```
 
-`06-nri.sh`
+This will create a new Azure resource group, a new AKS cluster and attach a new Node pool with GPUs. Please note the script *does not* deploy gpu drivers (by using `--gpu-driver none`). The access credentials are downloaded and added to the default `kubectl` context. You should be able to test the new deployment with a simple `kubectl get node`.
 
-By default, Azure Kubernetes Service sets a maximum locked memory limit of 64K per container, which is insufficient for vLLM's NIXL connector. To address this limitation, Node Resource Interface must be enabled on all GPU nodes. This script *must* run only after GPU Operator has completely finished deploying.
+Cluster configuration
+---
 
-`07-httproute.sh`
+```bash
+# use defaults
+make deploy
 
-This phase deploys the high-level routing rules that direct traffic to your models and configures the authentication required to download model weights from external registries like Hugging Face.
+# personalize
+GPU_OPERATOR_VERSION=v25.10.0 NRI_NAMESPACE=kube-system make deploy
+```
 
-`08-llmd.sh`
+The `deploy` target handles the GPU drivers layer since the node pool was initialized with `--gpu-driver none` in the previous step. The script installs GPU Operator that in turn deploys needed NVidia drivers. This is handled via `helm`. Of note is the `--set "driver.rdma.enabled=true"` argument, which enables RDMA. This is harmless even if using a single node or no RDMA capable accelerators. The compilation and deplyoment of GPU Operator will take several minutes. It is best to watch the pods using `kubectl -n gpu-operator get pod` until all pods are in state "Running".
 
-This phase moves beyond infrastructure to the actual AI application layer, where the LLM-D scheduler and model servers (vLLM) are instantiated.
+After GPU Operator is deployed and running, the containerd NRI plugin is also deployed. By default, Azure Kubernetes Service sets a maximum locked memory limit of 64K per container, which is insufficient for vLLM's NIXL connector. To address this limitation, Node Resource Interface must be enabled on all GPU nodes. This script *must* run only after GPU Operator has completely finished deploying.
 
 Validation
 ---
