@@ -1,7 +1,0 @@
-#!/bin/bash
-
-source vars
-
-echo "--- 11. Deploying NRI Plugin ---"
-
-helm upgrade --install nri-setup ../nri-config/   --namespace kube-system   --create-namespace
