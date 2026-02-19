@@ -22,6 +22,7 @@ This repository contains a `Makefile` designed to facilitate AKS cluster creatio
 | `LOCATION`       | `eastus`         | Azure region/location |
 | `CONTROL_SKU`    | `Standard_D5_v2` | Size of virtual machine used for running the control plane |
 | `GPU_SKU`        | `Standard_NC24ads_A100_v4` | Size of virtual machine (with GPU!) used for running gpu worker nodes |
+| `CONTROL_NODE_COUNT` | `2`          | How many control worker nodes to add |
 | `NODE_COUNT`     | `1`              | How many GPU worker node to be added |
 | `SSH_KEY_FILE`   | `${HOME}/.ssh/azure.pub` | Path to ssh public key used to access nodes via SSH |
 | `GPU_OPERATOR_VERSION` | `v25.10.0` | GPU Operator version to deploy |

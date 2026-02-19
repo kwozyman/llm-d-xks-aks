@@ -3,6 +3,7 @@ CLUSTER_NAME ?= "llmd-cluster-1"
 LOCATION ?= "eastus"
 CONTROL_SKU ?= "Standard_D5_v2"
 GPU_SKU ?= "Standard_NC24ads_A100_v4"
+CONTROL_NODE_COUNT ?= "2"
 NODE_COUNT ?= "1"
 SSH_KEY_FILE ?= "${HOME}/.ssh/azure.pub"
 GPU_OPERATOR_VERSION ?= "v25.10.0"
@@ -53,7 +54,7 @@ cluster-create:
 	@echo "Creating Resource Group"
 	az group create --name "${RESOURCE_GROUP}" --location "${LOCATION}"
 	@echo "Creating AKS Cluster (control plane)"
-	az aks create --resource-group "${RESOURCE_GROUP}" --name "${CLUSTER_NAME}" --node-count "${NODE_COUNT}" \
+	az aks create --resource-group "${RESOURCE_GROUP}" --name "${CLUSTER_NAME}" --node-count "${CONTROL_NODE_COUNT}" \
 		--node-vm-size "${CONTROL_SKU}" --ssh-key-value "${SSH_KEY_FILE}"
 	@echo "Adding GPU Node Pool"
 	az aks nodepool add --resource-group "${RESOURCE_GROUP}" --cluster-name "${CLUSTER_NAME}" \
