@@ -21,7 +21,8 @@ help:
 	@echo "   clean               -- alias to cluster-clear"
 	@echo "   cluster-clean       -- completely delete created AKS cluster"
 	@echo "   cluster             -- cluster-create and cluster-credentials"
-	@echo "   cluster-create      -- create a new AKS cluster and attach the desired GPU nodes as a nodepool"
+	@echo "   cluster-create      -- create a new AKS cluster "
+	@echo "   cluster-nodepool    -- create and attach the desired GPU nodes as a nodepool"
 	@echo "   cluster-credentials -- download the cluster credentials (kubeconfig)"
 	@echo "   deploy              -- deploy GPU Operator and NRI plugin"
 	@echo "   deploy-gpuoperator  -- deploy Nvidia GPU Operator using helmchart"
@@ -34,7 +35,7 @@ check-deps:
 	@which helm
 
 clean: cluster-clean
-cluster: cluster-create cluster-credentials
+cluster: cluster-create cluster-nodepool cluster-credentials
 deploy: deploy-gpuoperator deploy-nriconfig
 
 cluster-clean:
@@ -56,6 +57,8 @@ cluster-create:
 	@echo "Creating AKS Cluster (control plane)"
 	az aks create --resource-group "${RESOURCE_GROUP}" --name "${CLUSTER_NAME}" --node-count "${CONTROL_NODE_COUNT}" \
 		--node-vm-size "${CONTROL_SKU}" --ssh-key-value "${SSH_KEY_FILE}"
+
+cluster-nodepool:
 	@echo "Adding GPU Node Pool"
 	az aks nodepool add --resource-group "${RESOURCE_GROUP}" --cluster-name "${CLUSTER_NAME}" \
 		--name "${NODEPOOL_NAME}" --node-count "${NODE_COUNT}" --node-vm-size "${GPU_SKU}" \
