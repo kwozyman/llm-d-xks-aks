@@ -29,6 +29,7 @@ This repository contains a `Makefile` designed to facilitate AKS cluster creatio
 | `NODEPOOL_NAME`  | `gpunp`          | AKS nodepool name |
 | `GPU_NODE_LABEL` | `sku=gpu`        | Label to add to all GPU nodes |
 | `NRI_NAMESPACE`  | `kube-system`    | Namespace in which to deploy NRI plugin |
+| `CLUSTER_TAGS`   | ` `              | Cluster tags to add to the AKS cluster. Multiple tags can be separated by space |
 
 In order to override any of the variables:
 
@@ -66,7 +67,7 @@ kubectl get node
 
 ```
 
-This will create a new Azure resource group, a new AKS cluster and attach a new Node pool with GPUs. Please note the script *does not* deploy gpu drivers (by using `--gpu-driver none`). The access credentials are downloaded and added to the default `kubectl` context. You should be able to test the new deployment with a simple `kubectl get node`.
+This will create a new Azure resource group, a new AKS cluster and attach a new Node pool with GPUs. Please note the script *does not* deploy gpu drivers (by using `--gpu-driver none`). The access credentials are downloaded and added to the default `kubectl` context. You should be able to test the new deployment with a simple `kubectl get node`. The new AKS cluster is tagged with the Azure username used for creation and additionag tags can be added by using the `CLUSTER_TAGS` environment variable.
 
 Cluster configuration
 ---

@@ -10,6 +10,7 @@ GPU_OPERATOR_VERSION ?= "v25.10.0"
 NODEPOOL_NAME ?= "gpunp"
 GPU_NODE_LABEL ?= "sku=gpu"
 NRI_NAMESPACE ?= "kube-system"
+CLUSTER_TAGS ?= 
 
 default: help
 
@@ -56,7 +57,8 @@ cluster-create:
 	az group create --name "${RESOURCE_GROUP}" --location "${LOCATION}"
 	@echo "Creating AKS Cluster (control plane)"
 	az aks create --resource-group "${RESOURCE_GROUP}" --name "${CLUSTER_NAME}" --node-count "${CONTROL_NODE_COUNT}" \
-		--node-vm-size "${CONTROL_SKU}" --ssh-key-value "${SSH_KEY_FILE}"
+		--node-vm-size "${CONTROL_SKU}" --ssh-key-value "${SSH_KEY_FILE}" \
+		--tags "owner=$(shell az account show --query user.name -o tsv)" $(CLUSTER_TAGS:%=%)
 
 cluster-nodepool:
 	@echo "Adding GPU Node Pool"
